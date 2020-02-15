@@ -3,6 +3,7 @@ package bsu.smart.home.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import java.util.*
 import javax.persistence.*
+import javax.validation.constraints.NotBlank
 
 @Entity
 @Table
@@ -15,9 +16,10 @@ data class Temperature (
     @Column(columnDefinition = "BINARY(16)")
     var guid: UUID? = null,
 
+    @get:NotBlank
     var name: String? = null,
 
-    var temperatureValue: Int? = DEFAULT_TEMPERATURE_VALUE,
+    var temperatureValue: Int = DEFAULT_TEMPERATURE_VALUE,
 
     var status: Boolean = false
 ) {

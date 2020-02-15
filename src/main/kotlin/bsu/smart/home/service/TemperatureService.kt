@@ -1,5 +1,6 @@
 package bsu.smart.home.service
 
+import bsu.smart.home.config.exception.TemperatureValueException
 import bsu.smart.home.model.Temperature
 import bsu.smart.home.repository.TemperatureRepository
 import org.springframework.stereotype.Service
@@ -20,11 +21,14 @@ class TemperatureService(
     fun findTemperatureByName(name: String) = temperatureRepository.findByName(name)
 
     @Transactional
-    fun createTemperature(temperature: Temperature) = temperature.name?.let {
-        if (checkNameUnique(it)) temperatureRepository.save(
-                temperature.apply { guid = randomUUID() }
-        )
-        else throw NonUniqueResultException()
+    fun createTemperature(temperature: Temperature) {
+        temperatureValueIsCorrect(temperature.temperatureValue)
+        temperature.name?.let {
+            if (checkNameUnique(it)) temperatureRepository.save(
+                    temperature.apply { guid = randomUUID() }
+            )
+            else throw NonUniqueResultException()
+        }
     }
 
     @Transactional
@@ -46,4 +50,12 @@ class TemperatureService(
     fun deleteLight(guid: UUID) = temperatureRepository.deleteByGuid(guid)
 
     fun checkNameUnique(lightName: String) = !temperatureRepository.existsByName(lightName)
+
+    fun temperatureValueIsCorrect(value: Int) {
+        if (value !in RANGE_CORRECT_TEMPERATURE_VALUE) throw TemperatureValueException()
+    }
+
+    companion object {
+        private val RANGE_CORRECT_TEMPERATURE_VALUE = 16..24
+    }
 }
