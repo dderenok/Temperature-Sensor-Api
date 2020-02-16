@@ -30,5 +30,5 @@ class TemperatureController(
     fun createTemperature(@RequestBody temperature: Temperature) = temperatureService.createTemperature(temperature)
 
     @DeleteMapping("/{guid}")
-    fun deleteTemperature(@PathVariable guid: UUID) = temperatureService.deleteLight(guid)
+    fun deleteTemperature(@PathVariable guid: UUID) = temperatureService.deleteTemperature(guid)
 }
