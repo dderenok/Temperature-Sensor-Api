@@ -6,7 +6,11 @@ import javax.persistence.*
 import javax.validation.constraints.NotBlank
 
 @Entity
-@Table
+@Table(
+    name = "temperature",
+    uniqueConstraints = [UniqueConstraint(name = "name", columnNames = ["name"])]
+)
+
 data class Temperature (
     @Id
     @JsonIgnore
