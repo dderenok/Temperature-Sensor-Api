@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 @EnableJpaRepositories(basePackages = ["bsu.smart.home.repository"])
 @EntityScan("bsu.smart.home.model")
 @SpringBootApplication
-open class Application
+class Application
 
 fun main(args: Array<String>) {
     runApplication<Application>(*args)

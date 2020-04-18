@@ -1,0 +1,23 @@
+server:
+  port: 8082
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    password: superroot
+    url: jdbc:mysql://localhost:3306/temperature_sensor
+    username: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: localhost
+    password: guest
+    port: 15672
+    username: guest
+temperature:
+  create:
+    exchange: temperature-create-exchange
+    queue: temperature-create-queue
+  delete:
+    exchange: temperature-delete-exchange
+    queue: temperature-delete-queue

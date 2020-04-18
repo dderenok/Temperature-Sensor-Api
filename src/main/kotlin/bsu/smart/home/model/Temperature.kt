@@ -1,8 +1,14 @@
 package bsu.smart.home.model
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import java.util.*
-import javax.persistence.*
+import java.io.Serializable
+import java.util.UUID
+import javax.persistence.Entity
+import javax.persistence.Table
+import javax.persistence.UniqueConstraint
+import javax.persistence.Id
+import javax.persistence.GeneratedValue
+import javax.persistence.Column
 import javax.validation.constraints.NotBlank
 
 @Entity
@@ -10,7 +16,6 @@ import javax.validation.constraints.NotBlank
     name = "temperature",
     uniqueConstraints = [UniqueConstraint(name = "name", columnNames = ["name"])]
 )
-
 data class Temperature (
     @Id
     @JsonIgnore
@@ -26,8 +31,10 @@ data class Temperature (
     var temperatureValue: Int = DEFAULT_TEMPERATURE_VALUE,
 
     var status: Boolean = false
-) {
+): Serializable {
     companion object {
         private const val DEFAULT_TEMPERATURE_VALUE = 20
+
+        private const val serialVersionUID = 18050923851891936L
     }
 }
