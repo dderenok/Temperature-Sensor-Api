@@ -1,6 +1,7 @@
 package bsu.smart.home.controller
 
 import bsu.smart.home.model.Temperature
+import bsu.smart.home.model.dto.TemperatureDto
 import bsu.smart.home.service.TemperatureService
 import org.springframework.web.bind.annotation.*
 import java.util.*
@@ -27,7 +28,7 @@ class TemperatureController(
             temperatureService.updateTemperature(guid, temperature)
 
     @PostMapping
-    fun createTemperature(@RequestBody temperature: Temperature) = temperatureService.createTemperature(temperature)
+    fun createTemperature(@RequestBody temperature: TemperatureDto) = temperatureService.createTemperature(temperature)
 
     @DeleteMapping("/{guid}")
     fun deleteTemperature(@PathVariable guid: UUID) = temperatureService.deleteTemperature(guid)

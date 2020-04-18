@@ -4,8 +4,13 @@ import bsu.smart.home.config.exception.TemperatureNameException
 import bsu.smart.home.config.exception.TemperatureNotFoundException
 import bsu.smart.home.config.exception.TemperatureValueException
 import bsu.smart.home.model.Temperature
+import bsu.smart.home.model.dto.TemperatureDto
+import bsu.smart.home.model.dto.TemperatureDto.Companion.toTemperature
 import bsu.smart.home.model.response.DeleteResponse
 import bsu.smart.home.repository.TemperatureRepository
+import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus.OK
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -15,8 +20,25 @@ import javax.transaction.Transactional
 
 @Service
 class TemperatureService(
-    private var temperatureRepository: TemperatureRepository
+    private var temperatureRepository: TemperatureRepository,
+    @Value("\${temperature.create.exchange}") private val createTemperatureExchange: String,
+    @Value("\${temperature.delete.exchange}") private val deleteTemperatureExchange: String
 ) {
+    @Autowired
+    private lateinit var rabbitTemplate: RabbitTemplate
+
+    fun TemperatureDto.createNotification() = rabbitTemplate.apply {
+        setExchange(createTemperatureExchange)
+    }.convertAndSend(this)
+
+    fun deleteNotification(guid: UUID) = rabbitTemplate.apply {
+        setExchange(deleteTemperatureExchange)
+    }.convertAndSend(guid.toString())
+
+    private fun sendRabbitMqNotification(exchange: String) = rabbitTemplate.apply {
+        setExchange(exchange)
+    }.convertAndSend(this)
+
     fun findAllTemperatures() =
             temperatureRepository.findAll()
 
@@ -29,17 +51,18 @@ class TemperatureService(
                     throw TemperatureNameException(temperatureNotFoundMessage("name", name))
 
     @Transactional
-    fun createTemperature(temperature: Temperature): Temperature {
-        temperatureValueIsCorrect(temperature.temperatureValue)
-        temperature.name?.let {
+    fun createTemperature(temperatureDto: TemperatureDto): Temperature {
+        temperatureValueIsCorrect(temperatureDto.temperatureValue)
+        temperatureDto.name?.let {
             if (!checkNameUnique(it) && it.isNotEmpty())
                 throw TemperatureNameException(temperatureNameUniqueMessage(it))
         } ?: throw TemperatureNameException(temperatureNullNameMessage())
+        temperatureDto.apply {
+            guid = randomUUID()
+        }.createNotification()
 
-        temperature
-                .apply { guid = randomUUID() }
+        return toTemperature(temperatureDto)
                 .saveTemperature()
-        return temperature
     }
 
     @Transactional
@@ -69,12 +92,13 @@ class TemperatureService(
         temperatureRepository.deleteByGuid(guid).run {
             ResponseEntity(DeleteResponse(temperatureDeleteMessage(guid.toString())), OK)
         }
+        deleteNotification(guid)
     } ?: throw TemperatureNotFoundException(temperatureNotFoundMessage("guid", guid.toString()))
 
     fun checkNameUnique(temperatureName: String) = !temperatureRepository.existsByName(temperatureName)
 
-    fun temperatureValueIsCorrect(value: Int) {
-        if (value !in RANGE_CORRECT_TEMPERATURE_VALUE) throw TemperatureValueException()
+    fun temperatureValueIsCorrect(value: Int?) {
+        if (value == null || value !in RANGE_CORRECT_TEMPERATURE_VALUE) throw TemperatureValueException()
     }
 
     fun Temperature.saveTemperature() = temperatureRepository.save(this)
