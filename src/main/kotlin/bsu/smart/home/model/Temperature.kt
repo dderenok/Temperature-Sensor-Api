@@ -33,7 +33,7 @@ data class Temperature (
     var status: Boolean = false
 ): Serializable {
     companion object {
-        private const val DEFAULT_TEMPERATURE_VALUE = 20
+        const val DEFAULT_TEMPERATURE_VALUE = 20
 
         private const val serialVersionUID = 18050923851891936L
     }

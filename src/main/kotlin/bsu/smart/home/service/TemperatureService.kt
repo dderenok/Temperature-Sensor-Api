@@ -4,6 +4,7 @@ import bsu.smart.home.config.exception.TemperatureNameException
 import bsu.smart.home.config.exception.TemperatureNotFoundException
 import bsu.smart.home.config.exception.TemperatureValueException
 import bsu.smart.home.model.Temperature
+import bsu.smart.home.model.Temperature.Companion.DEFAULT_TEMPERATURE_VALUE
 import bsu.smart.home.model.dto.TemperatureDto
 import bsu.smart.home.model.dto.TemperatureDto.Companion.toTemperature
 import bsu.smart.home.model.response.DeleteResponse
@@ -73,17 +74,17 @@ class TemperatureService(
     } ?: throw TemperatureNotFoundException(temperatureNotFoundMessage("guid", guid.toString()))
 
     @Transactional
-    fun updateTemperature(guid: UUID, temperature: Temperature) = temperatureRepository.findByGuid(guid)?.let {
-        temperature.name?.let { name ->
+    fun updateTemperature(guid: UUID, temperatureDto: TemperatureDto) = temperatureRepository.findByGuid(guid)?.let {
+        temperatureDto.name?.let { name ->
             if (!checkNameUnique(name))
                 throw TemperatureNameException(temperatureNameUniqueMessage((name)))
         }
-        temperatureValueIsCorrect(temperature.temperatureValue)
+        temperatureValueIsCorrect(temperatureDto.temperatureValue)
 
         it.apply {
-            temperature.name?.let { tempName -> name = tempName }
-            status = temperature.status
-            temperatureValue = temperature.temperatureValue
+            temperatureDto.name?.let { tempName -> name = tempName }
+            status = temperatureDto.status
+            temperatureValue = temperatureDto.temperatureValue ?: DEFAULT_TEMPERATURE_VALUE
         }.saveTemperature()
     } ?: throw TemperatureNotFoundException(temperatureNotFoundMessage("guid", guid.toString()))
 
