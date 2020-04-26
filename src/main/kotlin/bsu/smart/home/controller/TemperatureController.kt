@@ -24,8 +24,8 @@ class TemperatureController(
     fun updateTemperatureStatus(@PathVariable guid: UUID) = temperatureService.updateStatus(guid)
 
     @PutMapping("/{guid}")
-    fun updateTemperature(@PathVariable guid: UUID, @RequestBody temperature: Temperature) =
-            temperatureService.updateTemperature(guid, temperature)
+    fun updateTemperature(@PathVariable guid: UUID, @RequestBody temperatureDto: TemperatureDto) =
+            temperatureService.updateTemperature(guid, temperatureDto)
 
     @PostMapping
     fun createTemperature(@RequestBody temperature: TemperatureDto) = temperatureService.createTemperature(temperature)
