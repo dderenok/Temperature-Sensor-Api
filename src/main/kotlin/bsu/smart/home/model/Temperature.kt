@@ -30,7 +30,10 @@ data class Temperature (
 
     var temperatureValue: Int = DEFAULT_TEMPERATURE_VALUE,
 
-    var status: Boolean = false
+    var status: Boolean = false,
+
+    @Column(columnDefinition = "BINARY(16)")
+    var roomGuid: UUID? = null
 ): Serializable {
     companion object {
         const val DEFAULT_TEMPERATURE_VALUE = 20

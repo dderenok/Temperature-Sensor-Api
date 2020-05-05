@@ -21,3 +21,10 @@ temperature:
   delete:
     exchange: temperature-delete-exchange
     queue: temperature-delete-queue
+  attach:
+    exchange: attach-temperature-to-room-exchange
+    queue: attach-temperature-to-room-queue
+room:
+  attach-temperature:
+    exchange: room-attach-temperature-exchange
+    queue: room-attach-temperature-queue
