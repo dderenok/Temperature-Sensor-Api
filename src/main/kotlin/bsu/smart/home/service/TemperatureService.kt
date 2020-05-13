@@ -29,7 +29,9 @@ class TemperatureService(
     private var temperatureRepository: TemperatureRepository,
     @Value("\${temperature.create.exchange}") private val createTemperatureExchange: String,
     @Value("\${temperature.delete.exchange}") private val deleteTemperatureExchange: String,
-    @Value("\${room.attach-temperature.queue}") private val attachRoomToTemperatureQueue: String
+    @Value("\${room.attach-temperature.queue}") private val attachRoomToTemperatureQueue: String,
+    @Value("\${room.remove-temperature.queue}") private val removeTemperatureFromRoomQueue: String,
+    @Value("\${spring.cloud.stream.bindings.input.destination}") private val mqttTopic: String
 ) {
     @Autowired
     private lateinit var rabbitTemplate: RabbitTemplate
@@ -49,6 +51,19 @@ class TemperatureService(
         }
     }
 
+    @RabbitListener(queues = [
+        "\${room.remove-temperature.queue}"
+    ])
+    @Transactional
+    fun removeTemperatureFromRoomListener(temperatureGuid: String) {
+        logger.info { "Unattach notification from Room for Temperature with guid: ${temperatureGuid}" }
+
+        unplackAvailabillity(temperatureGuid)?.let {
+            val temperature = temperatureRepository.findByGuid(it)
+            temperature?.roomGuid = null
+        }
+    }
+
     /**
      *  Checking sensors guids transfered through rabbit queues on correction type.
      */
@@ -59,17 +74,19 @@ class TemperatureService(
         return null
     }
 
-    fun TemperatureDto.createNotification() = rabbitTemplate.apply {
+    fun Temperature.createNotification() = rabbitTemplate.apply {
         setExchange(createTemperatureExchange)
-    }.convertAndSend(this)
+    }.convertAndSend(
+        listOf(
+            this.guid.toString(),
+            this.roomGuid.toString(),
+            "TEMPERATURE"
+        )
+    )
 
     fun deleteNotification(guid: UUID) = rabbitTemplate.apply {
         setExchange(deleteTemperatureExchange)
     }.convertAndSend(guid.toString())
-
-    private fun sendRabbitMqNotification(exchange: String) = rabbitTemplate.apply {
-        setExchange(exchange)
-    }.convertAndSend(this)
 
     fun findAllTemperatures() =
         temperatureRepository.findAll()
@@ -106,18 +123,51 @@ class TemperatureService(
         } ?: throw TemperatureNameException(temperatureNullNameMessage())
         temperatureDto.apply {
             guid = randomUUID()
-        }.createNotification()
+        }
 
-        return toTemperature(temperatureDto)
-                .saveTemperature()
+        return toTemperature(temperatureDto).let {
+            it.createNotification()
+            it.saveTemperature()
+        }
+    }
+
+    /**
+     *  Send notification to Mqtt server about update Light status.
+     */
+    fun sendUpdateSensorStatusToHardware(sensorGuid: String)  = rabbitTemplate.apply {
+        setExchange(mqttTopic)
+    }.convertAndSend(listOf(TEMPERATURE_SENSOR, sensorGuid))
+
+    /**
+     *  Listen Temperature sensor response about update status.
+     */
+    @RabbitListener(queues = ["\${temperature.response.output}"])
+    fun updateLightHardwareStatus(responseStatus: List<String>) {
+        logger.info { "Receive message from light hardware sensor about update status"}
+        if (responseStatus[0] == TEMPERATURE_SENSOR) {
+            when (responseStatus[2]) {
+                "1" -> logger.info { "Status successfully updated" }
+                "0" -> {
+                    logger.warning { "Status does no updated successfully, return to last status"}
+                    val sensorGuid = unplackAvailabillity(responseStatus[1])
+                    if (sensorGuid != null) {
+                        temperatureRepository.findByGuid(sensorGuid)?.let {
+                            it.status = !it.status
+                        }
+                    } else {
+                        logger.warning { "Status does no updated successfully, because guid is not correct"}
+                    }
+                }
+            }
+        }
     }
 
     @Transactional
-    fun updateStatus(guid: UUID) = temperatureRepository.findByGuid(guid)?.let {
-        temperatureRepository.save(it.apply {
-            status = !status
-        })
-    } ?: throw TemperatureNotFoundException(temperatureNotFoundMessage("guid", guid.toString()))
+    fun updateStatus(guid: UUID, roomGuid: UUID) = temperatureRepository.findByGuid(guid)?.apply {
+        sendUpdateSensorStatusToHardware(guid.toString())
+        status = !status
+    }.let { it?.saveTemperature() }
+            ?: throw TemperatureNotFoundException(temperatureNotFoundMessage("guid", guid.toString()))
 
     @Transactional
     fun updateTemperature(guid: UUID, temperatureDto: TemperatureDto) = temperatureRepository.findByGuid(guid)?.let {

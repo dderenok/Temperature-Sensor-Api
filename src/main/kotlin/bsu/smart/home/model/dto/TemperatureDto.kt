@@ -18,6 +18,7 @@ data class TemperatureDto(
             name = temperatureDto.name
             temperatureValue = temperatureDto.temperatureValue ?: DEFAULT_TEMPERATURE_VALUE
             status = temperatureDto.status
+            roomGuid = temperatureDto.roomGuid
         }
 
         private const val DEFAULT_TEMPERATURE_VALUE = 20

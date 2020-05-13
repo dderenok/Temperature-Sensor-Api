@@ -1,6 +1,37 @@
 server:
   port: 8082
 spring:
+  cloud:
+    stream:
+      bindings:
+        input:
+          destination: amq.topic
+          binder: rabbit
+          group: messages-consumer-group
+          consumer:
+            concurrency: 1
+        output:
+          destination: sensor.response.topic
+          binder: rabbit
+          group: messages-consumer-group
+          consumer:
+            concurrency: 1
+      rabbit:
+        bindings:
+          input:
+            consumer:
+              durableSubscription: true
+              declareExchange: true
+              exchangeDurable: true
+              exchangeType: topic
+              queueNameGroupOnly: true
+          output:
+            consumer:
+              durableSubscription: true
+              declareExchange: true
+              exchangeDurable: true
+              exchangeType: topic
+              queueNameGroupOnly: true
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     password: superroot
@@ -24,7 +55,12 @@ temperature:
   attach:
     exchange: attach-temperature-to-room-exchange
     queue: attach-temperature-to-room-queue
+  response:
+    output: temperature-response-output-queue
 room:
   attach-temperature:
     exchange: room-attach-temperature-exchange
     queue: room-attach-temperature-queue
+  remove-temperature:
+    exchange: room-remove-temperature-exchange
+    queue: room-remove-temperature-queue

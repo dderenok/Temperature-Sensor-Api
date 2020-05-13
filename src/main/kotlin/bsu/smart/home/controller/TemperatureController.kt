@@ -31,8 +31,9 @@ class TemperatureController(
     @GetMapping("/filter")
     fun findTemperatureByName(@RequestParam("name") name: String) = temperatureService.findTemperatureByName(name)
 
-    @PutMapping("/status/{guid}")
-    fun updateTemperatureStatus(@PathVariable guid: UUID) = temperatureService.updateStatus(guid)
+    @PutMapping("/status/{guid}/{roomGuid}")
+    fun updateTemperatureStatus(@PathVariable guid: UUID, @PathVariable roomGuid: UUID) =
+            temperatureService.updateStatus(guid, roomGuid)
 
     @PutMapping("/{guid}")
     fun updateTemperature(@PathVariable guid: UUID, @RequestBody temperatureDto: TemperatureDto) =
